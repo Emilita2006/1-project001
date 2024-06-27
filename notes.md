@@ -59,11 +59,10 @@ gh auth login
 
 
 # execute cdk 
+yarn add aws-cdk-lib
 cdk bootstrap --profile awsUtpc  #  Only Once
 cdk deploy --profile awsUtpc
 cdk destroy --profile awsUtpc
-
-
 
 # create python virtual environment 
 python3.9 -m venv 1-ven

@@ -13,7 +13,7 @@ headers = {
         "Access-Control-Allow-Methods": "OPTIONS,GET,POST"
     }
 
-def withdrawMoney():
+def withdrawMoney( idTarjetNumber, tipoDesposito, monto):
   try:
     conn = mysql.connector.connect(
       host=ENV_HOST_MYSQL,
@@ -23,6 +23,20 @@ def withdrawMoney():
       port=ENV_PORT_MYSQL
     )  
     cursor = conn.cursor()
+
+    cursor.execute(f"""
+      INSERT INTO Transaccion (tipo, monto, idCuenta)
+      VALUES ('{tipoDesposito}', {monto}, {idTarjetNumber});     
+    """)
+
+    cursor.execute(f"""
+      UPDATE CuentaBancaria
+      SET saldo = saldo - {monto}
+      WHERE id = '{idTarjetNumber}';
+    """)
+
+    conn.commit()
+    print(f"Key updated successfully for idTarjetNumber: {idTarjetNumber}")
 
   except mysql.connector.Error as e:
     print(f"Error connecting to MySQL: {e}")
@@ -35,13 +49,31 @@ def withdrawMoney():
 
 def lambda_handler(event, context):
   try:
-    print("holla")
-    return {
-        "statusCode": 200,
-        "headers": headers,
-        "body": json.dumps({"message": "Success"})
-    }
+    print(f"Event: {event} ")
+    print(f"Context: {context}")
+    body = event['body']
+    body_dict = json.loads(body)
+    print(f"body_dict: {body_dict}  [lambda_handler]")
 
+    idTarjetNumber = body_dict['idTarjetNumber']
+    tipoDesposito = body_dict['tipoDesposito']
+    monto = body_dict['monto']
+
+    if tipoDesposito == 'Retiro':
+      withdrawMoney(idTarjetNumber, tipoDesposito, monto)
+
+      return {
+          "statusCode": 200,
+          "headers": headers,
+          "body": json.dumps({"message": "Success"})
+      }
+
+    else:
+      return {
+          "statusCode": 200,
+          "headers": headers,
+          "body": json.dumps({"message": "No es un retiro de dinero"})
+      }
   except Exception as e:
     print(f"Error [lambda_handler]: {e}")
     return {
