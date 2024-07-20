@@ -8,7 +8,7 @@ ENV_DATABASE_MYSQL = os.getenv("ENV_DATABASE_MYSQL")
 ENV_PORT_MYSQL = os.getenv("ENV_PORT_MYSQL")
 
 headers = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": "*", #hola 
   "Access-Control-Allow-Headers": "Content-Type",
   "Access-Control-Allow-Methods": "OPTIONS,GET,POST"
 }
