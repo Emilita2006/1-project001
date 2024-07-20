@@ -13,23 +13,21 @@ export class UtpcCdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    ////////////////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////    CREATE AWS ROLE   /////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////
+    // Crear un rol de IAM para las funciones Lambda
 
     const utpcRole = new Role(this, 'utpcRole', {
       assumedBy: new ServicePrincipal('lambda.amazonaws.com'), 
       roleName: 'utpcRole'
     });
 
+
+    // Agregar políticas administradas al rol de IAM
+    
     utpcRole.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('AWSLambda_FullAccess'));
     utpcRole.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('CloudWatchLogsFullAccess'));
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////    CREATE AWS LAMBDAS LAYERS    ///////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////
-
+    // Crear una capa Lambda para el conector MySQL
     const mysqlConnectorLayer = new LayerVersion(this, 'mysqlconnector', {
       code: Code.fromAsset(path.join(__dirname, './layers/mysqlConnector')), 
       compatibleRuntimes: [Runtime.PYTHON_3_9],
@@ -37,9 +35,7 @@ export class UtpcCdkStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY
     });
 
-    ////////////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////    CREATE AWS LAMBDAS FUNCTIONS    //////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////
+    // Función para crear las funciones Lambda con configuración común
 
     const utpcDepositMoney = new Function(this, 'utpcDepositMoney', {
       runtime: Runtime.PYTHON_3_9, 
@@ -109,9 +105,7 @@ export class UtpcCdkStack extends cdk.Stack {
       },
     });
 
-    ////////////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////      CREATE AWS APIS      ///////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////
+  // Crear una API REST para interactuar con las funciones Lambda
 
     const utpcApi = new RestApi(this, `utpcApi`, {
       restApiName: `utpc-api`,
@@ -128,9 +122,8 @@ export class UtpcCdkStack extends cdk.Stack {
       },
     });
 
-    ////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////      CREATE RESOURCES APIS      ////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////
+  
+   // Crear integraciones Lambda para cada función
 
     const createUtpcDepositMoney = new LambdaIntegration(utpcDepositMoney, 
       {allowTestInvoke: false,});
@@ -145,9 +138,7 @@ export class UtpcCdkStack extends cdk.Stack {
       {allowTestInvoke: false,});
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////      CREATE METHOD APIS     //////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////
+  // Agregar métodos de API a los recursos correspondientes
 
     const resourceUtpcDepositMoney = utpcApi.root.addResource("utpcDepositMoney");
     resourceUtpcDepositMoney.addMethod("POST", createUtpcDepositMoney); 
