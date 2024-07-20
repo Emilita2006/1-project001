@@ -1,18 +1,21 @@
 import json, os
 import mysql.connector
 
+# Obtener variables de entorno para la conexión a la base de datos
 ENV_HOST_MYSQL = os.getenv("ENV_HOST_MYSQL")
 ENV_USER_MYSQL = os.getenv("ENV_USER_MYSQL")
 ENV_PASSWORD_MYSQL = os.getenv("ENV_PASSWORD_MYSQL")
 ENV_DATABASE_MYSQL = os.getenv("ENV_DATABASE_MYSQL")
 ENV_PORT_MYSQL = os.getenv("ENV_PORT_MYSQL")
 
+
+# Encabezados de respuesta para CORS
 headers = {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Headers": "Content-Type",
         "Access-Control-Allow-Methods": "OPTIONS,GET,POST"
     }
-
+# Función para conectarse a la base de datos y crear tablas si no existen
 def connect_to_db():
   try:
     conn = mysql.connector.connect(
@@ -23,7 +26,8 @@ def connect_to_db():
       port=ENV_PORT_MYSQL
     )  
     cursor = conn.cursor()
-
+ # Crear tabla CuentaBancaria si no existe
+ 
     cursor.execute("""
       CREATE TABLE IF NOT EXISTS CuentaBancaria (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -35,7 +39,7 @@ def connect_to_db():
         correoElectronico VARCHAR(255)
       )
     """)
-
+# Crear tabla Transaccion si no existe
     cursor.execute("""
       CREATE TABLE IF NOT EXISTS Transaccion (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -46,11 +50,12 @@ def connect_to_db():
         FOREIGN KEY (idCuenta) REFERENCES CuentaBancaria(id)
       )
     """)
-
+ # Datos iniciales para la tabla CuentaBancaria
     cuentas_data = [
       ('1001', 5000.00, 'John Doe', '1234-5678-9012-3456', '123456', 'john.doe@example.com'),
       ('1002', 8000.00, 'Jane Smith', '9876-5432-1098-7654', '654321', 'jane.smith@example.com')
     ]
+      # Insertar datos iniciales en la tabla CuentaBancaria
     cursor.executemany("""
       INSERT INTO CuentaBancaria (numeroCuenta, saldo, titular, tarjetaDebito, claveTarjeta, correoElectronico)
       VALUES (%s, %s, %s, %s, %s, %s)
@@ -69,7 +74,7 @@ def connect_to_db():
       print("MySQL connection is closed")
 
 
-
+# Función Lambda principal
 def lambda_handler(event, context):
   try:
     print("holla")

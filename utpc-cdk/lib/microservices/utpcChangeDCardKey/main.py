@@ -1,19 +1,21 @@
 import json, os
 import mysql.connector
 
+# Obtener variables de entorno para la conexión a la base de datos
 ENV_HOST_MYSQL = os.getenv("ENV_HOST_MYSQL")
 ENV_USER_MYSQL = os.getenv("ENV_USER_MYSQL")
 ENV_PASSWORD_MYSQL = os.getenv("ENV_PASSWORD_MYSQL")
 ENV_DATABASE_MYSQL = os.getenv("ENV_DATABASE_MYSQL")
 ENV_PORT_MYSQL = os.getenv("ENV_PORT_MYSQL")
 
+# Encabezados de respuesta para CORS
 headers = {
-  "Access-Control-Allow-Origin": "*", #hola 
+  "Access-Control-Allow-Origin": "*", #hola r
   "Access-Control-Allow-Headers": "Content-Type",
   "Access-Control-Allow-Methods": "OPTIONS,GET,POST"
 }
 
-# Cambio de Clave
+# Función para actualizar la clave de la tarjeta
 def updateKey(idTarjetNumber,newKey, tipoDesposito):
   try:
     conn = mysql.connector.connect(
@@ -25,10 +27,14 @@ def updateKey(idTarjetNumber,newKey, tipoDesposito):
     )  
     cursor = conn.cursor()
 
+# Inserción de transacción
+
     cursor.execute(f"""
       INSERT INTO Transaccion (tipo, monto, idCuenta)
       VALUES ('{tipoDesposito}', 0, {idTarjetNumber});     
     """)
+
+    # Actualización de la clave de la tarjeta
 
     cursor.execute(f"""
       UPDATE CuentaBancaria
@@ -48,6 +54,7 @@ def updateKey(idTarjetNumber,newKey, tipoDesposito):
       conn.close()
       print("MySQL connection is closed")
 
+# Manejador de la función Lambda
 
 def lambda_handler(event, context):
   try:

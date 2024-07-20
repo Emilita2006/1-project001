@@ -1,18 +1,21 @@
 import json, os
 import mysql.connector
 
+# Obtener variables de entorno para la conexión a la base de datos
+
 ENV_HOST_MYSQL = os.getenv("ENV_HOST_MYSQL")
 ENV_USER_MYSQL = os.getenv("ENV_USER_MYSQL")
 ENV_PASSWORD_MYSQL = os.getenv("ENV_PASSWORD_MYSQL")
 ENV_DATABASE_MYSQL = os.getenv("ENV_DATABASE_MYSQL")
 ENV_PORT_MYSQL = os.getenv("ENV_PORT_MYSQL")
 
+# Encabezados de respuesta para CORS
 headers = {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Headers": "Content-Type",
         "Access-Control-Allow-Methods": "OPTIONS,GET,POST"
     }
-
+# Función para realizar un retiro de dinero
 def withdrawMoney( idTarjetNumber, tipoDesposito, monto):
   try:
     conn = mysql.connector.connect(
@@ -23,12 +26,14 @@ def withdrawMoney( idTarjetNumber, tipoDesposito, monto):
       port=ENV_PORT_MYSQL
     )  
     cursor = conn.cursor()
-
+ 
+ # Insertar registro de transacción
+ 
     cursor.execute(f"""
       INSERT INTO Transaccion (tipo, monto, idCuenta)
       VALUES ('{tipoDesposito}', {monto}, {idTarjetNumber});     
     """)
-
+ # Actualizar saldo de la cuenta bancaria
     cursor.execute(f"""
       UPDATE CuentaBancaria
       SET saldo = saldo - {monto}
@@ -47,6 +52,7 @@ def withdrawMoney( idTarjetNumber, tipoDesposito, monto):
       conn.close()
       print("MySQL connection is closed")
 
+# Función Lambda principal
 def lambda_handler(event, context):
   try:
     print(f"Event: {event} ")
