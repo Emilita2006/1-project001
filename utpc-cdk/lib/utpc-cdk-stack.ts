@@ -1,5 +1,5 @@
 import * as cdk from 'aws-cdk-lib';
-import { Role, ServicePrincipal, ManagedPolicy } from 'aws-cdk-lib/aws-iam';
+import { Role, ServicePrincipal, ManagedPolicy, PolicyStatement, Effect } from 'aws-cdk-lib/aws-iam';
 import { Function, Runtime, Code, LayerVersion } from 'aws-cdk-lib/aws-lambda';
 import { RestApi, Cors, MethodLoggingLevel, LambdaIntegration } from 'aws-cdk-lib/aws-apigateway';
 import { Duration } from 'aws-cdk-lib/core';
@@ -17,7 +17,8 @@ export class UtpcCdkStack extends cdk.Stack {
 
     const utpcRole = new Role(this, 'utpcRole', {
       assumedBy: new ServicePrincipal('lambda.amazonaws.com'), 
-      roleName: 'utpcRole'
+      roleName: 'utpcRole',
+      description: 'Role for UTPC micro',
     });
 
 
@@ -25,6 +26,7 @@ export class UtpcCdkStack extends cdk.Stack {
     
     utpcRole.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('AWSLambda_FullAccess'));
     utpcRole.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('CloudWatchLogsFullAccess'));
+    utpcRole.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('AmazonSESFullAccess'));
 
 
     // Crear una capa Lambda para el conector MySQL
@@ -51,6 +53,7 @@ export class UtpcCdkStack extends cdk.Stack {
         ENV_PASSWORD_MYSQL: process.env.ENV_PASSWORD_MYSQL || 'default-value',
         ENV_DATABASE_MYSQL: process.env.ENV_DATABASE_MYSQL || 'default-value',
         ENV_PORT_MYSQL: process.env.ENV_PORT_MYSQL || 'default-value',
+        ENV_SES_EMAIL_FROM: process.env.ENV_SES_EMAIL_FROM || 'default-value',
       },
     });
 
@@ -68,6 +71,7 @@ export class UtpcCdkStack extends cdk.Stack {
         ENV_PASSWORD_MYSQL: process.env.ENV_PASSWORD_MYSQL || 'default-value',
         ENV_DATABASE_MYSQL: process.env.ENV_DATABASE_MYSQL || 'default-value',
         ENV_PORT_MYSQL: process.env.ENV_PORT_MYSQL || 'default-value',
+        ENV_SES_EMAIL_FROM: process.env.ENV_SES_EMAIL_FROM || 'default-value',
       },
     });
 
@@ -85,6 +89,7 @@ export class UtpcCdkStack extends cdk.Stack {
         ENV_PASSWORD_MYSQL: process.env.ENV_PASSWORD_MYSQL || 'default-value',
         ENV_DATABASE_MYSQL: process.env.ENV_DATABASE_MYSQL || 'default-value',
         ENV_PORT_MYSQL: process.env.ENV_PORT_MYSQL || 'default-value',
+        ENV_SES_EMAIL_FROM: process.env.ENV_SES_EMAIL_FROM || 'default-value',
       },
     });
 
@@ -102,6 +107,7 @@ export class UtpcCdkStack extends cdk.Stack {
         ENV_PASSWORD_MYSQL: process.env.ENV_PASSWORD_MYSQL || 'default-value',
         ENV_DATABASE_MYSQL: process.env.ENV_DATABASE_MYSQL || 'default-value',
         ENV_PORT_MYSQL: process.env.ENV_PORT_MYSQL || 'default-value',
+        ENV_SES_EMAIL_FROM: process.env.ENV_SES_EMAIL_FROM || 'default-value'
       },
     });
 
@@ -123,6 +129,19 @@ export class UtpcCdkStack extends cdk.Stack {
     });
 
   
+    
+    const verifi_correo = new Function(this, 'verifi_correo', {
+      runtime: Runtime.PYTHON_3_9, 
+      handler: 'main.lambda_handler',
+      code: Code.fromAsset(path.join(__dirname, './microservices/verifi_correo')),
+      functionName: 'verifi_correo',
+      timeout: Duration.minutes(1),
+      role: utpcRole,
+      environment: {
+        ENV_SES_EMAIL_FROM: process.env.ENV_SES_EMAIL_FROM || 'default-value'
+      },
+    });
+  
    // Crear integraciones Lambda para cada función
 
     const createUtpcDepositMoney = new LambdaIntegration(utpcDepositMoney, 
@@ -135,6 +154,9 @@ export class UtpcCdkStack extends cdk.Stack {
       {allowTestInvoke: false,});
 
     const createUtpcCreateDDL = new LambdaIntegration(utpcCreateDDL,
+      {allowTestInvoke: false,});
+  
+    const createverifi_correo = new LambdaIntegration(verifi_correo,
       {allowTestInvoke: false,});
 
 
@@ -151,6 +173,9 @@ export class UtpcCdkStack extends cdk.Stack {
 
     const resourceUtpcCreateDDL = utpcApi.root.addResource("utpcCreateDDL");
     resourceUtpcCreateDDL.addMethod("POST", createUtpcCreateDDL);
+
+    const resourceverifi_correo = utpcApi.root.addResource("verifi_correo");
+    resourceverifi_correo.addMethod("POST", createverifi_correo);
 
   }
 }

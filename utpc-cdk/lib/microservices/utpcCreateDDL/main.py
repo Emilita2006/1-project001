@@ -1,4 +1,4 @@
-import json, os
+import json, os, boto3
 import mysql.connector
 
 # Obtener variables de entorno para la conexión a la base de datos
@@ -7,7 +7,7 @@ ENV_USER_MYSQL = os.getenv("ENV_USER_MYSQL")
 ENV_PASSWORD_MYSQL = os.getenv("ENV_PASSWORD_MYSQL")
 ENV_DATABASE_MYSQL = os.getenv("ENV_DATABASE_MYSQL")
 ENV_PORT_MYSQL = os.getenv("ENV_PORT_MYSQL")
-
+ENV_SES_EMAIL_FROM = os.getenv("ENV_SES_EMAIL_FROM")
 
 # Encabezados de respuesta para CORS
 headers = {
@@ -15,6 +15,42 @@ headers = {
         "Access-Control-Allow-Headers": "Content-Type",
         "Access-Control-Allow-Methods": "OPTIONS,GET,POST"
     }
+    
+def send_html_email(email_source,email_destination,subject):
+    ses_client = boto3.client("ses")
+    CHARSET = "UTF-8"
+    HTML_EMAIL_CONTENT = f"""
+      <html>
+        <head></head>
+        <h1 style='text-align:center'>{subject}</h1>
+        <p>Se realizo el {subject}</p>
+        </body>
+      </html>
+    """
+
+    response = ses_client.send_email(
+        Destination={
+          "ToAddresses": [
+            email_destination,
+          ],
+        },
+        Message={
+          "Body": {
+            "Html": {
+              "Charset": CHARSET,
+              "Data": HTML_EMAIL_CONTENT,
+            }
+          },
+          "Subject": {
+            "Charset": CHARSET,
+            "Data": subject,
+          },
+        },
+        Source=email_source,
+    )
+
+    return response
+    
 # Función para conectarse a la base de datos y crear tablas si no existen
 def connect_to_db():
   try:
@@ -79,6 +115,14 @@ def lambda_handler(event, context):
   try:
     print("holla")
     connect_to_db()
+     email_subject = "Creacion de Tablas"
+     response_email = send_html_email(ENV_SES_EMAIL_FROM,
+                                       "cevillanovillaemily@gmail.com",
+                                       email_subject)
+
+    print(f"Email sent successfully {response_email}")
+
+
     return {
         "statusCode": 200,
         "headers": headers,
